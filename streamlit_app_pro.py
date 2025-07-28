@@ -385,15 +385,23 @@ def create_animated_3d_orbit(altitude_km, orbit_class, animation_frame=0):
     y_orbit = orbital_radius * np.sin(theta)
     z_orbit = np.zeros_like(theta)
     
-    # Animated satellite position
-    sat_angle = (time.time() % 20) / 20 * 2 * np.pi
+    # Animated satellite position - use both time and session state for better control
+    import streamlit as st
+    animation_speed = 1.0
+    if st.session_state.get('animation_active', False):
+        # Use a faster animation when active
+        sat_angle = (time.time() * animation_speed) % (2 * np.pi)
+    else:
+        # Static position when not animating
+        sat_angle = 0
+    
     sat_x = orbital_radius * np.cos(sat_angle)
     sat_y = orbital_radius * np.sin(sat_angle)
     sat_z = 0
     
-    # Create satellite trail
-    trail_length = 20
-    trail_angles = [sat_angle - i * 0.3 for i in range(trail_length)]
+    # Create satellite trail - only show when animating
+    trail_length = 15
+    trail_angles = [sat_angle - i * 0.2 for i in range(trail_length)]
     trail_x = [orbital_radius * np.cos(angle) for angle in trail_angles]
     trail_y = [orbital_radius * np.sin(angle) for angle in trail_angles]
     trail_z = [0] * trail_length
@@ -419,28 +427,32 @@ def create_animated_3d_orbit(altitude_km, orbit_class, animation_frame=0):
         hovertemplate=f'Orbital Path<br>Altitude: {altitude_km:,} km<extra></extra>'
     ))
     
-    # Satellite trail
-    fig.add_trace(go.Scatter3d(
-        x=trail_x, y=trail_y, z=trail_z,
-        mode='lines+markers',
-        line=dict(color='orange', width=4),
-        marker=dict(size=3, color='orange', opacity=0.7),
-        name='Satellite Trail',
-        hovertemplate='Satellite Trail<extra></extra>'
-    ))
+    # Satellite trail - only show if animation is active
+    if st.session_state.get('animation_active', False):
+        fig.add_trace(go.Scatter3d(
+            x=trail_x, y=trail_y, z=trail_z,
+            mode='lines+markers',
+            line=dict(color='orange', width=4),
+            marker=dict(size=3, color='orange', opacity=0.7),
+            name='Satellite Trail',
+            hovertemplate='Satellite Trail<extra></extra>'
+        ))
     
     # Active satellite
+    satellite_color = 'red' if st.session_state.get('animation_active', False) else 'blue'
+    satellite_size = 25 if st.session_state.get('animation_active', False) else 20
+    
     fig.add_trace(go.Scatter3d(
         x=[sat_x], y=[sat_y], z=[sat_z],
         mode='markers',
         marker=dict(
-            size=20,
-            color='red',
+            size=satellite_size,
+            color=satellite_color,
             symbol='diamond',
             line=dict(width=2, color='yellow')
         ),
         name='🛰️ Satellite',
-        hovertemplate=f'Active Satellite<br>Position: ({sat_x:.0f}, {sat_y:.0f}, {sat_z:.0f})<br>Altitude: {altitude_km:,} km<extra></extra>'
+        hovertemplate=f'{"🚀 Active" if st.session_state.get("animation_active", False) else "🛰️ Static"} Satellite<br>Position: ({sat_x:.0f}, {sat_y:.0f}, {sat_z:.0f})<br>Altitude: {altitude_km:,} km<extra></extra>'
     ))
     
     # Update layout with professional styling
@@ -541,6 +553,14 @@ def create_orbital_parameters_chart(orbit_params):
 def main():
     """Enhanced main application"""
     
+    # Initialize session state for animation
+    if 'animation_active' not in st.session_state:
+        st.session_state.animation_active = False
+    if 'altitude' not in st.session_state:
+        st.session_state.altitude = 400
+    if 'mass' not in st.session_state:
+        st.session_state.mass = 1000
+    
     # Hero section
     st.markdown("""
     <div class="hero-section">
@@ -612,11 +632,44 @@ def main():
             show_comparison = st.checkbox("Show satellite comparison", True)
             auto_refresh = st.checkbox("Auto-refresh visualization", True)
             show_physics_details = st.checkbox("Show detailed physics", True)
+            
+        st.markdown("---")
+        
+        # Animation Controls
+        st.markdown("### 🎮 Animation Controls")
+        
+        col_refresh1, col_refresh2 = st.columns(2)
+        
+        if col_refresh1.button("🚀 Start Animation", key="start_anim", help="Start real-time satellite animation"):
+            st.rerun()
+            
+        if col_refresh2.button("🔄 Refresh View", key="refresh_view", help="Refresh the orbital visualization"):
+            st.rerun()
     
     # Calculate parameters
     orbit_params = calc.calculate_comprehensive_parameters(mass_kg, altitude_km)
     orbit_class = calc.get_orbit_classification(altitude_km)
     mission_analysis = calc.generate_mission_analysis(orbit_params, orbit_class)
+    
+    # Auto-refresh for animation
+    if auto_refresh:
+        # Animation speed control
+        refresh_rate = st.sidebar.slider("Animation Speed (seconds)", 0.5, 5.0, 2.0, 0.5)
+        
+        # Display animation status
+        st.sidebar.success(f"🎬 Animation: ACTIVE (refreshing every {refresh_rate}s)")
+        
+        # Auto-refresh using session state and timer
+        if 'last_refresh' not in st.session_state:
+            st.session_state.last_refresh = time.time()
+        
+        # Check if it's time to refresh
+        current_time = time.time()
+        if current_time - st.session_state.last_refresh >= refresh_rate:
+            st.session_state.last_refresh = current_time
+            st.rerun()
+    else:
+        st.sidebar.info("🎬 Animation: OFF")
     
     # Main content
     col1, col2 = st.columns([2.5, 1.5])
@@ -624,8 +677,33 @@ def main():
     with col1:
         # 3D Visualization
         st.markdown("## 🌍 Real-Time Orbital Visualization")
+        
+        # Animation controls in the main area
+        anim_col1, anim_col2, anim_col3 = st.columns([1, 1, 2])
+        
+        with anim_col1:
+            if st.button("🚀 Start Animation", key="start_main", help="Start satellite movement"):
+                st.session_state.animation_active = True
+                st.rerun()
+                
+        with anim_col2:
+            if st.button("⏸️ Pause", key="pause_main", help="Pause animation"):
+                st.session_state.animation_active = False
+                
+        with anim_col3:
+            if auto_refresh and st.session_state.get('animation_active', False):
+                st.success("🎬 Satellite is moving in real-time!")
+            else:
+                st.info("🛰️ Click 'Start Animation' to see satellite movement")
+        
+        # Create the orbital visualization
         orbit_fig = create_animated_3d_orbit(altitude_km, orbit_class)
-        st.plotly_chart(orbit_fig, use_container_width=True, key="main_viz")
+        viz_placeholder = st.plotly_chart(orbit_fig, use_container_width=True, key="main_viz")
+        
+        # Auto-refresh the visualization if animation is active
+        if auto_refresh and st.session_state.get('animation_active', False):
+            time.sleep(0.1)  # Small delay
+            st.rerun()
         
         # Orbital parameters radar chart
         if show_physics_details:
@@ -799,10 +877,4 @@ def main():
     """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
-    # Initialize session state
-    if 'altitude' not in st.session_state:
-        st.session_state.altitude = 400
-    if 'mass' not in st.session_state:
-        st.session_state.mass = 1000
-        
     main()
