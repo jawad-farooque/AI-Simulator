@@ -389,8 +389,9 @@ def create_animated_3d_orbit(altitude_km, orbit_class, animation_frame=0):
     import streamlit as st
     animation_speed = 1.0
     if st.session_state.get('animation_active', False):
-        # Use a faster animation when active
-        sat_angle = (time.time() * animation_speed) % (2 * np.pi)
+        # Use animation counter for more controlled movement
+        animation_counter = st.session_state.get('animation_counter', 0)
+        sat_angle = (time.time() * animation_speed + animation_counter * 0.5) % (2 * np.pi)
     else:
         # Static position when not animating
         sat_angle = 0
@@ -556,6 +557,8 @@ def main():
     # Initialize session state for animation
     if 'animation_active' not in st.session_state:
         st.session_state.animation_active = False
+    if 'animation_counter' not in st.session_state:
+        st.session_state.animation_counter = 0
     if 'altitude' not in st.session_state:
         st.session_state.altitude = 400
     if 'mass' not in st.session_state:
@@ -640,36 +643,34 @@ def main():
         
         col_refresh1, col_refresh2 = st.columns(2)
         
-        if col_refresh1.button("🚀 Start Animation", key="start_anim", help="Start real-time satellite animation"):
-            st.rerun()
-            
-        if col_refresh2.button("🔄 Refresh View", key="refresh_view", help="Refresh the orbital visualization"):
-            st.rerun()
+        with col_refresh1:
+            if st.button("🚀 Start Animation", key="start_anim", help="Start real-time satellite animation"):
+                st.session_state.animation_active = True
+                st.success("Animation activated!")
+                
+        with col_refresh2:
+            if st.button("🔄 Update Position", key="refresh_view", help="Refresh the orbital visualization"):
+                # This button will trigger a rerun and update the satellite position
+                if st.session_state.get('animation_active', False):
+                    st.session_state.animation_counter = st.session_state.get('animation_counter', 0) + 1
     
     # Calculate parameters
     orbit_params = calc.calculate_comprehensive_parameters(mass_kg, altitude_km)
     orbit_class = calc.get_orbit_classification(altitude_km)
     mission_analysis = calc.generate_mission_analysis(orbit_params, orbit_class)
     
-    # Auto-refresh for animation
-    if auto_refresh:
+    # Auto-refresh for animation - simplified approach
+    if auto_refresh and st.session_state.get('animation_active', False):
         # Animation speed control
-        refresh_rate = st.sidebar.slider("Animation Speed (seconds)", 0.5, 5.0, 2.0, 0.5)
+        refresh_rate = st.sidebar.slider("Animation Speed (seconds)", 1.0, 5.0, 2.0, 0.5)
+        st.sidebar.success(f"🎬 Animation: ACTIVE (auto-refreshing)")
         
-        # Display animation status
-        st.sidebar.success(f"🎬 Animation: ACTIVE (refreshing every {refresh_rate}s)")
+        # Use a simple placeholder-based approach
+        placeholder = st.sidebar.empty()
+        placeholder.info("🔄 Animation running...")
         
-        # Auto-refresh using session state and timer
-        if 'last_refresh' not in st.session_state:
-            st.session_state.last_refresh = time.time()
-        
-        # Check if it's time to refresh
-        current_time = time.time()
-        if current_time - st.session_state.last_refresh >= refresh_rate:
-            st.session_state.last_refresh = current_time
-            st.rerun()
     else:
-        st.sidebar.info("🎬 Animation: OFF")
+        st.sidebar.info("🎬 Animation: OFF - Use 'Start Animation' button")
     
     # Main content
     col1, col2 = st.columns([2.5, 1.5])
@@ -684,26 +685,43 @@ def main():
         with anim_col1:
             if st.button("🚀 Start Animation", key="start_main", help="Start satellite movement"):
                 st.session_state.animation_active = True
-                st.rerun()
+                st.success("✅ Animation Started! Click again to see movement.")
                 
         with anim_col2:
             if st.button("⏸️ Pause", key="pause_main", help="Pause animation"):
                 st.session_state.animation_active = False
+                st.info("⏸️ Animation Paused")
                 
         with anim_col3:
-            if auto_refresh and st.session_state.get('animation_active', False):
-                st.success("🎬 Satellite is moving in real-time!")
-            else:
-                st.info("🛰️ Click 'Start Animation' to see satellite movement")
+            # Manual refresh button for animation
+            if st.button("🔄 Refresh Position", key="refresh_position", help="Update satellite position"):
+                # Force a rerun to update position
+                pass  # The button click itself will trigger a rerun
+                
+        # Status display
+        if st.session_state.get('animation_active', False):
+            st.success("🎬 Animation Mode: ACTIVE - Click 'Refresh Position' to see satellite move!")
+            
+            # Add auto-refresh option with JavaScript
+            if auto_refresh:
+                refresh_rate = st.sidebar.slider("Auto-refresh Rate (seconds)", 1.0, 5.0, 2.0, 0.5)
+                st.markdown(f"""
+                <script>
+                setTimeout(function(){{
+                    const refreshBtn = window.parent.document.querySelector('[data-testid="baseButton-secondary"]');
+                    if (refreshBtn && refreshBtn.textContent.includes('Refresh Position')) {{
+                        refreshBtn.click();
+                    }}
+                }}, {int(refresh_rate * 1000)});
+                </script>
+                """, unsafe_allow_html=True)
+                st.info(f"🔄 Auto-refreshing every {refresh_rate} seconds")
+        else:
+            st.info("🛰️ Animation Mode: PAUSED - Click 'Start Animation' then 'Refresh Position'")
         
         # Create the orbital visualization
         orbit_fig = create_animated_3d_orbit(altitude_km, orbit_class)
-        viz_placeholder = st.plotly_chart(orbit_fig, use_container_width=True, key="main_viz")
-        
-        # Auto-refresh the visualization if animation is active
-        if auto_refresh and st.session_state.get('animation_active', False):
-            time.sleep(0.1)  # Small delay
-            st.rerun()
+        st.plotly_chart(orbit_fig, use_container_width=True, key="main_viz")
         
         # Orbital parameters radar chart
         if show_physics_details:
