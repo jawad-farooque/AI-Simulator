@@ -1,30 +1,22 @@
 # AI Satellite Orbit Simulator
 
-🛰️ **Professional AI-Powered Orbital Mechanics Simulation Platform**
+🛰️ **Professional AI-Powered Orbital Mechanics Desktop Simulation**
 
-An interactive, educational simulation tool that demonstrates orbital mechanics through real-time physics calculations and AI-powered orbit classification. This project bridges physics, artificial intelligence, and space technology to provide an engaging learning experience.
+An interactive, educational desktop simulation tool that demonstrates orbital mechanics through real-time physics calculations and AI-powered orbit classification. This project bridges physics, artificial intelligence, and space technology to provide an engaging learning experience.
 
-## 🌟 Live Demo
+## 🌟 Features
 
-**🚀 [Try the Live Application](https://ai-simulator-jawad.streamlit.app)** *(Will be available after deployment)*
-
-## 🎯 Features
-
-### 🚀 Professional Web Application
-- **Interactive 3D Visualization**: Real-time animated orbital mechanics
-- **AI-Powered Analysis**: Smart orbit classification and mission recommendations
-- **Professional UI/UX**: Modern design with animations and responsive layout
-- **Real Satellite Database**: Compare with ISS, Hubble, GPS, and more
-- **Physics Engine**: Accurate orbital calculations with advanced metrics
-
-### 🖥️ Desktop Applications
-- **Pygame Simulation**: Real-time interactive orbital visualization
-- **GUI Control Panel**: User-friendly parameter adjustment interface
+### �️ Desktop Application with Real-Time Animation
+- **Interactive GUI Control Panel**: Tkinter-based parameter adjustment interface
+- **Real-Time Pygame Visualization**: Smooth satellite orbital animation
 - **Adaptive Scaling**: Works on any screen size automatically
+- **AI-Powered Analysis**: Smart orbit classification and mission recommendations
+- **Physics Engine**: Accurate orbital calculations with advanced metrics
+- **Visual Orbital Trail**: See the satellite's path in real-time
 
 ## 🎮 Quick Start
 
-### 🌐 Web Application (Recommended)
+### 🖥️ Desktop Application (Recommended)
 ```bash
 # Clone the repository
 git clone https://github.com/jawad-farooque/AI-Simulator.git
@@ -33,21 +25,30 @@ cd AI-Simulator
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the professional web app
-streamlit run streamlit_app_pro.py
-```
-
-### 🖥️ Desktop Applications
-```bash
-# Run the main pygame simulation
-python main.py
-
-# Run the GUI version with control panel
+# Run the GUI version with control panel and real-time animation
 python satellite_gui.py
 
-# Interactive launcher
+# Run the main pygame simulation (basic version)
+python main.py
+
+# Interactive launcher for all applications
 python launcher.py
 ```
+
+## �️ Application Features
+
+### 🎯 **GUI Control Panel** (`satellite_gui.py`)
+- **Parameter Sliders**: Adjust satellite mass (100-50,000 kg) and altitude (150-50,000 km)
+- **Real-Time Calculations**: Orbital velocity, period, and centripetal force
+- **AI Orbit Classification**: Automatic detection of LEO, MEO, GEO, HEO orbits
+- **Mission Analysis**: Detailed AI-powered mission suitability assessment
+- **Live Visualization**: Separate pygame window with smooth satellite animation
+
+### 🚀 **Pygame Simulation** (`main.py`)
+- **Real-Time Animation**: Watch satellites orbit Earth with realistic physics
+- **Adaptive Scaling**: Automatically adjusts to any screen resolution
+- **Visual Trail**: See the satellite's orbital path
+- **Physics Display**: Live orbital parameters and metrics
 
 ## 📊 Educational Applications
 
