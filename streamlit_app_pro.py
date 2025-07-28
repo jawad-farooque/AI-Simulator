@@ -643,6 +643,7 @@ def main():
             show_comparison = st.checkbox("Show satellite comparison", True)
             show_physics_details = st.checkbox("Show detailed physics", True)
             animation_speed = st.slider("Animation Speed", 0.5, 3.0, 1.0, 0.1, help="Adjust how fast the satellite moves")
+            auto_refresh = st.checkbox("Auto-refresh animation", False, help="Automatically update satellite position")
             
         st.markdown("---")
     
@@ -651,10 +652,24 @@ def main():
     orbit_class = calc.get_orbit_classification(altitude_km)
     mission_analysis = calc.generate_mission_analysis(orbit_params, orbit_class)
     
-    # Auto-refresh for animation - simplified approach
+    # Auto-refresh for animation - simplified approach  
     if st.session_state.get('animation_active', False):
         st.sidebar.success("🎬 Animation: RUNNING")
-        st.sidebar.info("🔄 Satellite is orbiting continuously")
+        if auto_refresh:
+            st.sidebar.info("🔄 Auto-refreshing enabled")
+            # Use JavaScript for auto-refresh
+            st.markdown("""
+            <script>
+            setTimeout(function(){
+                const updateBtn = window.parent.document.querySelector('button[data-testid="baseButton-secondary"]');
+                if (updateBtn && updateBtn.textContent.includes('Update')) {
+                    updateBtn.click();
+                }
+            }, 2000);
+            </script>
+            """, unsafe_allow_html=True)
+        else:
+            st.sidebar.info("🔄 Manual update mode - click 'Update' button")
     else:
         st.sidebar.info("🎬 Animation: STOPPED")
         st.sidebar.warning("Click 'Start Animation' to begin")
@@ -673,23 +688,27 @@ def main():
             if st.button("🚀 Start Animation", key="start_main", help="Start continuous satellite movement"):
                 st.session_state.animation_active = True
                 st.session_state.start_time = time.time()
+                st.rerun()  # Immediate refresh to start animation
                 
         with anim_col2:
             if st.button("⏸️ Stop Animation", key="pause_main", help="Stop animation"):
                 st.session_state.animation_active = False
+                st.rerun()  # Refresh to stop animation
                 
-        # Status display
+        # Status display with manual refresh button
         if st.session_state.get('animation_active', False):
-            st.success("🎬 Satellite is orbiting continuously! Animation is running...")
+            col_status1, col_status2 = st.columns([2, 1])
             
-            # Add auto-refresh for continuous animation
-            st.markdown("""
-            <script>
-            setTimeout(function(){
-                window.location.reload();
-            }, 1000);
-            </script>
-            """, unsafe_allow_html=True)
+            with col_status1:
+                st.success("🎬 Satellite is orbiting continuously!")
+            
+            with col_status2:
+                if st.button("🔄 Update", key="update_position", help="Click to see satellite move"):
+                    # This will trigger a rerun and show new position
+                    pass
+            
+            # Show animation instructions
+            st.info("💡 Keep clicking '🔄 Update' to see the satellite move around the orbit!")
             
         else:
             st.info("🛰️ Click 'Start Animation' to begin continuous orbital movement")
@@ -697,6 +716,27 @@ def main():
         # Create the orbital visualization
         orbit_fig = create_animated_3d_orbit(altitude_km, orbit_class, animation_speed)
         st.plotly_chart(orbit_fig, use_container_width=True, key="main_viz")
+        
+        # Show current satellite position info
+        if st.session_state.get('animation_active', False):
+            start_time = st.session_state.get('start_time', time.time())
+            elapsed_time = time.time() - start_time
+            base_period = 20.0 / animation_speed
+            rotation_speed = (2 * np.pi) / base_period
+            current_angle = (elapsed_time * rotation_speed) % (2 * np.pi)
+            
+            # Calculate progress percentage
+            progress = (current_angle / (2 * np.pi)) * 100
+            
+            col_info1, col_info2 = st.columns(2)
+            with col_info1:
+                st.metric("🛰️ Satellite Angle", f"{current_angle:.2f} rad", f"{progress:.1f}% complete")
+            with col_info2:
+                st.metric("⏱️ Animation Time", f"{elapsed_time:.1f}s", f"Speed: {animation_speed:.1f}x")
+                
+            # Progress bar
+            st.progress(progress / 100)
+            st.caption("📊 Orbital Progress - The satellite moves even if visualization appears static")
         
         # Orbital parameters radar chart
         if show_physics_details:
