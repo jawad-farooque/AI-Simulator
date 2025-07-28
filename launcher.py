@@ -1,15 +1,8 @@
-"""
-AI Satellite Orbit Simulator Launcher
-=====================================
-Launch script that provides options for different simulation modes.
-"""
-
 import subprocess
 import sys
 import os
 
 def print_banner():
-    """Print the application banner"""
     banner = """
     🛰️  AI SATELLITE ORBIT SIMULATOR  🛰️
     ======================================
@@ -22,7 +15,6 @@ def print_banner():
     print(banner)
 
 def print_options():
-    """Print available options"""
     options = """
     1. 🎮 Full Interactive Simulation (Recommended)
        - Real-time pygame visualization
@@ -46,7 +38,6 @@ def print_options():
     print(options)
 
 def run_main_simulation():
-    """Run the main pygame simulation"""
     try:
         print("\n🚀 Starting Full Interactive Simulation...")
         print("Controls:")
@@ -63,7 +54,6 @@ def run_main_simulation():
         input("Press Enter to continue...")
 
 def run_gui_simulation():
-    """Run the GUI version"""
     try:
         print("\n🖥️  Starting GUI Control Panel...")
         print("Features:")
@@ -79,7 +69,6 @@ def run_gui_simulation():
         input("Press Enter to continue...")
 
 def show_project_info():
-    """Display project information"""
     info = """
     🛰️ AI SATELLITE ORBIT SIMULATOR
     ================================
@@ -124,7 +113,6 @@ def show_project_info():
     input("\nPress Enter to return to main menu...")
 
 def main():
-    """Main launcher function"""
     while True:
         # Clear screen (Windows)
         os.system('cls' if os.name == 'nt' else 'clear')
